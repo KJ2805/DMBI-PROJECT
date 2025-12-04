@@ -1,0 +1,160 @@
+# Install essential libraries (if not already available)
+!pip install pandas numpy matplotlib seaborn scikit-learn
+import pandas as pd
+
+# Load dataset from GitHub
+url = "https://raw.githubusercontent.com/Giridharan79/HOUSE_PRICE_PREDICTION/main/final_dataset.csv"
+df = pd.read_csv(url)
+
+# Show first few rows
+df.head()
+from sklearn.preprocessing import StandardScaler
+
+# Drop rows with missing values (if any)
+df.dropna(inplace=True)
+
+# Select features
+X = df[['beds', 'baths', 'size']]
+y = df['price']
+
+# Scale features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+# Create zone based on size
+df['zone'] = pd.cut(df['size'], bins=[0, 1200, 2000, df['size'].max()],
+                    labels=['C', 'B', 'A'])
+
+# Encode zone
+df['zone_encoded'] = df['zone'].astype('category').cat.codes
+
+# Update feature set
+X = df[['beds', 'baths', 'size', 'zone_encoded']]
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+import numpy as np
+
+X = df[['beds', 'baths', 'size']]
+y = df['price']
+
+# Scale features
+from sklearn.preprocessing import StandardScaler
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Split data
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+# Train model
+reg_model = LinearRegression()
+reg_model.fit(X_train, y_train)
+
+# Predict and evaluate
+y_pred = reg_model.predict(X_test)
+rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+print("Regression RMSE:", rmse)
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, classification_report
+
+# Create price categories
+df['price_category'] = pd.qcut(df['price'], q=3, labels=['Low', 'Medium', 'High'])
+
+# Classification features and labels
+X_cls = X_scaled
+y_cls = df['price_category']
+
+# Split and train
+from sklearn.model_selection import train_test_split
+X_train_cls, X_test_cls, y_train_cls, y_test_cls = train_test_split(X_cls, y_cls, test_size=0.2, random_state=42)
+
+cls_model = DecisionTreeClassifier()
+cls_model.fit(X_train_cls, y_train_cls)
+
+# Predict and evaluate
+y_pred_cls = cls_model.predict(X_test_cls)
+print("Classification Accuracy:", accuracy_score(y_test_cls, y_pred_cls))
+print(classification_report(y_test_cls, y_pred_cls))
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+
+# Apply K-Means
+kmeans = KMeans(n_clusters=3, random_state=42)
+df['cluster'] = kmeans.fit_predict(X_scaled)
+
+# Visualize clusters
+plt.figure(figsize=(8,6))
+plt.scatter(df['size'], df['price'], c=df['cluster'], cmap='viridis')
+plt.title("K-Means Clustering: Size vs Price")
+plt.xlabel("Size")
+plt.ylabel("Price")
+plt.show()
+import seaborn as sns
+
+# Scatter plot: Size vs Price by Beds
+plt.figure(figsize=(8,6))
+sns.scatterplot(data=df, x='size', y='price', hue='beds')
+plt.title("Size vs Price by Number of Beds")
+plt.show()
+
+# Bar chart: Average Price by Number of Beds
+plt.figure(figsize=(6,4))
+sns.barplot(data=df, x='beds', y='price')
+plt.title("Average Price by Number of Beds")
+plt.show()
+
+# Cluster count bar chart
+plt.figure(figsize=(6,4))
+sns.countplot(data=df, x='cluster')
+plt.title("Number of Houses in Each Cluster")
+plt.show()
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(8,6))
+sns.boxplot(data=df, x='beds', y='price')
+plt.title("Price Distribution by Number of Bedrooms")
+plt.show()
+df['price_category'] = pd.qcut(df['price'], q=3, labels=['Low', 'Medium', 'High'])
+
+df['price_category'].value_counts().plot.pie(
+    autopct='%1.1f%%',
+    figsize=(6,6),
+    colors=['lightgreen','gold','salmon']
+)
+plt.title("Proportion of Price Categories")
+plt.ylabel("")
+plt.show()
+from sklearn.metrics import confusion_matrix
+
+cm = confusion_matrix(y_test_cls, y_pred_cls)
+
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=['Low','Medium','High'],
+            yticklabels=['Low','Medium','High'])
+
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
+plt.figure(figsize=(6,4))
+sns.barplot(x='cluster', y='price', data=df)
+plt.title("Average Price per Cluster")
+plt.show()
+# ✅ Sample prediction using already trained models
+
+index = 25  # You can change this to test other rows
+sample = X_scaled[index].reshape(1, -1)
+
+print("📄 Sample Data Row:")
+print(df[['beds', 'baths', 'size', 'price']].iloc[index])
+
+print("\n📈 Predicted Price:", round(reg_model.predict(sample)[0], 2))
+print("📊 Predicted Category:", cls_model.predict(sample)[0])
+print("🔗 Cluster Group:", kmeans.predict(sample)[0])
+index = 45
+sample = X_scaled[index].reshape(1, -1)
+
+print(df[['beds', 'baths', 'size', 'price']].iloc[index])
+print("Predicted Price:", round(reg_model.predict(sample)[0], 2))
+print("Predicted Category:", cls_model.predict(sample)[0])
+print("Cluster Group:", kmeans.predict(sample)[0])
